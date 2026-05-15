@@ -46,3 +46,40 @@ def load_safe_domains():
 
 # Загружаем базу при старте
 load_safe_domains()
+
+# Расширенный список подозрительных паттернов
+SUSPICIOUS_PATTERNS = [
+    (r'bit\.ly|tinyurl\.com|t\.co|goo\.gl|short\.link|ow\.ly|buff\.ly', 'Сервис сокращения ссылок'),
+    (r'paypal.*\.ru|amazon.*\.ru|facebook.*\.ru|google.*\.ru|microsoft.*\.ru',
+     'Поддельный домен известного бренда с .ru'),
+    (r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', 'Использование IP-адреса вместо домена'),
+    (r'[a-z0-9-]+\.(tk|ml|ga|cf|gq|xyz|top)', 'Подозрительный домен верхнего уровня'),
+    (r'(secure|verify|account|update|confirm|login|signin).*\.(tk|ml|ga|cf)', 'Фишинговый паттерн в домене'),
+    (r'[a-z0-9]{20,}\.[a-z]{2,}', 'Очень длинный случайный домен'),
+    (r'[0-9]{4,}\.[a-z]', 'Домен начинается с большого количества цифр'),
+]
+
+# Список известных фишинговых доменов верхнего уровня
+SUSPICIOUS_TLDS = ['tk', 'ml', 'ga', 'cf', 'gq', 'xyz', 'top', 'club', 'click', 'download']
+
+# Список сервисов сокращения ссылок
+URL_SHORTENERS = ['bit.ly', 'tinyurl.com', 't.co', 'goo.gl', 'short.link', 'ow.ly', 'buff.ly',
+                  'is.gd', 'v.gd', 'rebrand.ly', 'cutt.ly', 'shorturl.at', 'tiny.cc']
+
+
+def extract_domain_without_tld(domain):
+    """Извлекает домен БЕЗ TLD для сравнения с базой данных
+    Например: google.com -> google, mail.google.com -> google, yandex.ru -> yandex
+    """
+    # Убираем порт если есть
+    domain = domain.split(':')[0]
+
+    parts = domain.split('.')
+    if len(parts) >= 2:
+        # Берем предпоследнюю часть (домен без TLD и поддомена)
+        # Например: mail.google.com -> google, google.com -> google
+        return parts[-2]
+    elif len(parts) == 1:
+        # Если только одна часть, возвращаем её (уже без TLD)
+        return parts[0]
+    return domain
