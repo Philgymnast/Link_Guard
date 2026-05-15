@@ -208,3 +208,65 @@ def check_url_safety(url):
         if len(path) > 100:
             risk_score += 10
             results['warnings'].append('📄 Очень длинный путь в URL - может содержать скрытые параметры')
+
+    # Определение итогового статуса
+        results['risk_score'] = min(risk_score, 100)
+
+        if risk_score >= 70:
+            results['is_safe'] = False
+        elif risk_score >= 40:
+            results['is_safe'] = None  # Неопределенно
+        else:
+            results['is_safe'] = True
+
+    # Дополнительные рекомендации
+        if results['is_safe'] == False:
+            results['recommendations'].append('🚫 НЕ РЕКОМЕНДУЕТСЯ переходить по этой ссылке')
+        elif results['is_safe'] == None:
+            results['recommendations'].append('⚠️ Будьте осторожны при переходе по этой ссылке')
+        else:
+            results['recommendations'].append('✅ Ссылка выглядит безопасной, но всегда будьте осторожны')
+
+        return results
+
+    except Exception as e:
+        return {
+            'url': original_url,
+            'error': str(e),
+            'is_safe': None,
+            'risk_score': 0
+    }
+
+
+@app.route('/')
+def index():
+    domain_count = len(SAFE_DOMAINS_SET)
+    domain_count_formatted = f"{domain_count:,}"
+    domain_count_millions = f"{domain_count / 1000000:.1f}M"
+    return render_template('index.html',
+                           domain_count=domain_count,
+                           domain_count_formatted=domain_count_formatted,
+                           domain_count_millions=domain_count_millions)
+
+
+@app.route('/check', methods=['POST'])
+def check_url():
+    data = request.get_json()
+    url = data.get('url', '')
+
+    if not url:
+        return jsonify({'error': 'URL не указан'}), 400
+
+    result = check_url_safety(url)
+    return jsonify(result)
+
+
+if __name__ == 'main':
+    print("=" * 60)
+    print("🛡  СЕРВЕР ПРОВЕРКИ ССЫЛОК НА БЕЗОПАСНОСТЬ")
+    print("=" * 60)
+    print(f"📊 База данных: {len(SAFE_DOMAINS_SET)} безопасных доменов")
+    print("🚀 Сервер запущен на http://localhost:5000")
+    print("📋 Откройте браузер и перейдите по адресу выше")
+    print("=" * 60)
+    app.run(debug=True, host='0.0.0.0', port=5000)
